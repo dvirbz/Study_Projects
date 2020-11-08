@@ -12,7 +12,7 @@ enum Forest{
 	Fire,
 	Tree
 };
-int getSquare(char c)
+int getSquareInt(char c)
 {
 	int square;
 	switch (c)
@@ -27,12 +27,26 @@ int getSquare(char c)
 	}
 	return square;
 }
+char* getSquareChar(int square , char *squareC)
+{
+	
+	switch (square)
+	{
+	case Fire:strcpy(squareC, "F");
+		break;
+	case Ground:strcpy(squareC, "G");
+		break;
+	case Tree: strcpy(squareC,"T");	
+		break;
+	}
+	return squareC;
+}
 void setForestDimension(char *firstLine, int* forestDimension, char* secondLine, int* generations)
 {
 	*forestDimension = (int)strtol(firstLine, (char**)NULL, DECIMALBASE);
 	*generations = (int)strtol(secondLine, (char**)NULL, DECIMALBASE);
 }
-int ** advanceForest(int **forestArray,int *forestDimension)
+void advanceForest(int **forestArray,int forestDimension)
 {
 	for (int i = 0; i < forestDimension; i++)
 	{
@@ -42,9 +56,9 @@ int ** advanceForest(int **forestArray,int *forestDimension)
 		}
 	}
 }
-int calculateNextGenSquare(int** forestArray, int* forestDimension,int row,int coulmn)
+int calculateNextGenSquare(int** forestArray, int forestDimension, int row, int coulmn)
 {
-	if (*(forestArray + row * (*forestDimension) + coulmn) == Fire)
+	if (**(forestArray + row * forestDimension + coulmn) == Fire)
 		return Ground;
 	int numberOfTree = 0;
 	for (int i = min(0, row - 1); i <= max(forestDimension - 1, row + 1); i++)
@@ -52,15 +66,28 @@ int calculateNextGenSquare(int** forestArray, int* forestDimension,int row,int c
 		for (int j = min(0, coulmn - 1); j <= max(forestDimension - 1, coulmn + 1); j++)
 		{
 			//check if fire is near
-			if ((j != coulmn && i != row) && *(forestArray + i * (*forestDimension) + j) == Fire)
+			if ((j != coulmn && i != row) && **(forestArray + i * forestDimension + j) == Fire)
 				return Fire;
-			if(*(forestArray + i * (*forestDimension) + j) == Tree)
+			if (**(forestArray + i * forestDimension + j) == Tree)
 				numberOfTree++;
 		}
 	}
 	if (numberOfTree >= 2)
 		return Tree;
-	return *(forestArray + row * (*forestDimension) + coulmn);
+	return **(forestArray + row * forestDimension + coulmn);
+}
+void getForestLineFrom2DArray(int** forestArray, int forestDimension, char* forestLine)
+{
+	char* squareC = (char*)malloc(sizeof(char));
+	strcpy(forestLine, "\0");
+	for (int i = 0; i < forestDimension; i++)
+	{
+		for (int j = 0; j < forestDimension; j++)
+		{
+			strcat(forestLine, getSquareChar(**(forestArray + i * forestDimension + j),squareC));
+		}
+	}	
+	free(squareC);
 }
 int main(int argc, char* argv[])
 {
@@ -85,13 +112,21 @@ int main(int argc, char* argv[])
 	int** forestArray = (int**)malloc(sizeof(int) * (*forestDimension) * (*forestDimension));
 	char* line = (char*)malloc(sizeof(char) * (*forestDimension) * COMMAFACTOR);
 	char* forestLine = (char*)malloc(sizeof(char) * (*forestDimension) * (*forestDimension));
-
+	char* square = (char*)malloc(sizeof(char));
 	strcpy(forestLine, "\0");
 	for (int i = 0; i < *forestDimension && line != NULL; i++)
 	{
-		line = fgets("\n", *forestDimension * COMMAFACTOR, forest);
-		line = strtok_s(line, ",", (char**)NULL);
-		strcat(forestLine, line);
+		line = fgets("\n", *(forestDimension) * COMMAFACTOR, forest);
+		square = strtok(line, ",");
+		strcat(forestLine, square);
+		//update 2D array in the correct position Row,0
+		while (square != NULL)
+		{
+			square = strtok(NULL, ",");
+			strcat(forestLine, square);
+			//update 2D array in the correct position
+		}
+
 		//lishloach lason
 		int numberOfFires = 0;
 		if (numberOfFires == ERROR)
