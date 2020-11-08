@@ -89,6 +89,13 @@ void getForestLineFrom2DArray(int** forestArray, int forestDimension, char* fore
 	}	
 	free(squareC);
 }
+void ForestArrayToNum(char* line, int** forestArray, int dimension, int row)
+{
+	for (int i = 0; i < dimension; i++)
+	{
+		**(forestArray + row*dimension + i) = getSquareInt(line + i);
+	}
+}
 int main(int argc, char* argv[])
 {
 	if (argc != 2)
@@ -126,7 +133,8 @@ int main(int argc, char* argv[])
 			strcat(forestLine, square);
 			//update 2D array in the correct position
 		}
-
+		ForestArrayToNum(line, forestArray, *forestDimension, i);
+		strcat(forestLine, line);
 		//lishloach lason
 		int numberOfFires = 0;
 		if (numberOfFires == ERROR)
