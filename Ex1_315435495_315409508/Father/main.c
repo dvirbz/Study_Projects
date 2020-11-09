@@ -4,39 +4,75 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+
 #define ERROR -1
 #define COMMAFACTOR 2
 #define DECIMALBASE 10
+#define MAX_LINE_LENGTH 100
+#define END_OF_LINE_FACTOR 1
+#define END_OF_LINE "\0"
+
 enum Forest{
-	Ground,
-	Fire,
-	Tree
+	GROUND,
+	FIRE,
+	TREE
 };
-int getSquareInt(char c)
+void zero2DArray(int** dest, int rows, int cols)
 {
-	int square;
-	switch (c)
+	for (int i = 0; i < rows; i++)
 	{
-	case 'F':square = Fire;
-		break;
-	case 'G':square = Ground;
-		break;
-	case 'T':square = Tree;
-	default:square = ERROR;
-		break;
+		for (int j = 0; j < cols; j++)
+		{
+			dest[i][j] = 0;
+		}
 	}
-	return square;
+}
+void init2DArray(int** dest, int rows,int cols)
+{	
+	for (int i = 0; i <rows ; i++)
+	{
+		dest[i] = (int*)malloc(sizeof(int) * cols);
+	}
+	zero2DArray(dest, rows, cols);
+}
+void free2DArray(int** dest, int rows, int cols)
+{
+	for (int i = 0; i < rows; i++)
+	{
+		free(dest[i]);
+	}
+	free(dest);
+}
+void copy2DArrat(int** dest, int** src, int rows, int cols)
+{
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			dest[i][j] = src[i][j];
+		}
+	}
+}
+
+int getSquareInt(char* c)
+{	
+	if (!strcmp(c, "F"))
+		return FIRE;
+	if (!strcmp(c, "G"))
+		return GROUND;
+	if (!strcmp(c, "T"))
+		return TREE;	
+	return ERROR;
 }
 char* getSquareChar(int square , char *squareC)
-{
-	
+{	
 	switch (square)
 	{
-	case Fire:strcpy(squareC, "F");
+	case FIRE:strcpy(squareC, "F");
 		break;
-	case Ground:strcpy(squareC, "G");
+	case GROUND:strcpy(squareC, "G");
 		break;
-	case Tree: strcpy(squareC,"T");	
+	case TREE: strcpy(squareC,"T");	
 		break;
 	}
 	return squareC;
@@ -46,55 +82,75 @@ void setForestDimension(char *firstLine, int* forestDimension, char* secondLine,
 	*forestDimension = (int)strtol(firstLine, (char**)NULL, DECIMALBASE);
 	*generations = (int)strtol(secondLine, (char**)NULL, DECIMALBASE);
 }
-void advanceForest(int **forestArray,int forestDimension)
-{
-	for (int i = 0; i < forestDimension; i++)
-	{
-		for (int j = 0; j < forestDimension; j++)
-		{
-			//forestArray + i*forestDimension + j;
-		}
-	}
-}
 int calculateNextGenSquare(int** forestArray, int forestDimension, int row, int coulmn)
 {
-	if (**(forestArray + row * forestDimension + coulmn) == Fire)
-		return Ground;
+	int thisSquare = forestArray[row][coulmn];
+	if (thisSquare == FIRE)
+		return GROUND;
 	int numberOfTree = 0;
-	for (int i = min(0, row - 1); i <= max(forestDimension - 1, row + 1); i++)
+	for (int i = max(0, row - 1); i <= min(forestDimension - 1, row + 1); i++)
 	{
-		for (int j = min(0, coulmn - 1); j <= max(forestDimension - 1, coulmn + 1); j++)
-		{
+		for (int j = max(0, coulmn - 1); j <= min(forestDimension - 1, coulmn + 1); j++)
+		{			
 			//check if fire is near
-			if ((j != coulmn && i != row) && **(forestArray + i * forestDimension + j) == Fire)
-				return Fire;
-			if (**(forestArray + i * forestDimension + j) == Tree)
+			if (thisSquare == TREE && (!(j != coulmn && i != row)) && forestArray[i][j] == FIRE)
+				return FIRE;
+			if (forestArray[i][j] == TREE && (j != coulmn || i != row))
 				numberOfTree++;
 		}
 	}
 	if (numberOfTree >= 2)
-		return Tree;
-	return **(forestArray + row * forestDimension + coulmn);
+		return TREE;
+	return thisSquare;
 }
+
 void getForestLineFrom2DArray(int** forestArray, int forestDimension, char* forestLine)
 {
-	char* squareC = (char*)malloc(sizeof(char));
+	char* tmpC = (char*)malloc(sizeof(char)*(1 + END_OF_LINE_FACTOR));
 	strcpy(forestLine, "\0");
 	for (int i = 0; i < forestDimension; i++)
 	{
 		for (int j = 0; j < forestDimension; j++)
 		{
-			strcat(forestLine, getSquareChar(**(forestArray + i * forestDimension + j),squareC));
+			strcat(forestLine, getSquareChar(forestArray[i][j],tmpC));
 		}
 	}	
+	free(tmpC);
+}
+void updateArrayAndLine(char* line, char* forestLine, int** forestArray, int row, int dimension)
+{
+	char* squareC = (char*)malloc(sizeof(char));
+	squareC = strtok(line, ",\n");	
+	int j = 0;
+	while (squareC != NULL && strcmp(squareC, "\n"))
+	{		
+		strcat(forestLine, squareC);
+		forestArray[row][j] = getSquareInt(squareC);
+		j++;
+		squareC = strtok(NULL, ",\n");
+	}
 	free(squareC);
 }
-void ForestArrayToNum(char* line, int** forestArray, int dimension, int row)
+void advanceForestgenertaion(int** forestArray, int forestDimension)
 {
-	for (int i = 0; i < dimension; i++)
+	int** tempArray = (int**)malloc(sizeof(int) * forestDimension * forestDimension);
+	if (tempArray == NULL)
+		return;
+	init2DArray(tempArray, forestDimension, forestDimension);
+	for (int i = 0; i < forestDimension; i++)
 	{
-		**(forestArray + row*dimension + i) = getSquareInt(line + i);
+		for (int j = 0; j < forestDimension; j++)
+		{
+			tempArray[i][j] = calculateNextGenSquare(forestArray, forestDimension, i, j);
+		}
 	}
+	copy2DArrat(forestArray, tempArray, forestDimension, forestDimension);
+	free(tempArray);
+}
+void WriteToOutput(FILE* output, char* forestLine, int numberOfFires)
+{
+	sprintf(forestLine, "%s - %d", forestLine, numberOfFires);
+	fputs(forestLine,output);
 }
 int main(int argc, char* argv[])
 {
@@ -103,69 +159,70 @@ int main(int argc, char* argv[])
 		printf("Mismatching number of arguments: %d", argc);
 		return ERROR;
 	}
-	FILE* forest = fopen(argv[1], "r");
-	if (forest == NULL)
+	FILE* inputF, *outputF;
+	inputF = fopen(argv[1], "r");
+	if (inputF == NULL)
 	{
 		printf("File could'nt be opened");
 		return ERROR;
 	}
-	char* firstLine = fgets("\n", 1, forest);
-	char* SecondLine = fgets("\n", 1, forest);
+	char* firstLine = (char*)malloc(sizeof(char)* MAX_LINE_LENGTH);
+	char* SecondLine = (char*)malloc(sizeof(char)* MAX_LINE_LENGTH);
 	int* forestDimension = (int*)malloc(sizeof(int));
 	int* generations = (int*)malloc(sizeof(int));
 
+	if (fgets(firstLine, MAX_LINE_LENGTH, inputF) == NULL)
+		return ERROR;
+	if (fgets(SecondLine, MAX_LINE_LENGTH, inputF) == NULL)
+		return ERROR;
 	setForestDimension(firstLine, forestDimension, SecondLine, generations);
 
-	int** forestArray = (int**)malloc(sizeof(int) * (*forestDimension) * (*forestDimension));
-	char* line = (char*)malloc(sizeof(char) * (*forestDimension) * COMMAFACTOR);
-	char* forestLine = (char*)malloc(sizeof(char) * (*forestDimension) * (*forestDimension));
+	int** forestArray = (int**)malloc(sizeof(int*) * (*forestDimension));
+	char* line = (char*)malloc(sizeof(char) * ((*forestDimension) * COMMAFACTOR + END_OF_LINE_FACTOR));
+	char* forestLine = (char*)calloc(sizeof(char),(*forestDimension) * (*forestDimension));
 	char* square = (char*)malloc(sizeof(char));
-	strcpy(forestLine, "\0");
+
+	init2DArray(forestArray, *forestDimension, *forestDimension);
+	//strcpy(forestLine, END_OF_LINE);
 	for (int i = 0; i < *forestDimension && line != NULL; i++)
 	{
-		line = fgets("\n", *(forestDimension) * COMMAFACTOR, forest);
-		square = strtok(line, ",");
-		strcat(forestLine, square);
-		//update 2D array in the correct position Row,0
-		while (square != NULL)
-		{
-			square = strtok(NULL, ",");
-			strcat(forestLine, square);
-			//update 2D array in the correct position
-		}
-		ForestArrayToNum(line, forestArray, *forestDimension, i);
-		strcat(forestLine, line);
-		//lishloach lason
-		int numberOfFires = 0;
-		if (numberOfFires == ERROR)
-		{
-			printf("ERROR");
+		if (fgets(line, (*forestDimension) * COMMAFACTOR + END_OF_LINE_FACTOR, inputF) == NULL)
 			return ERROR;
-		}
+		updateArrayAndLine(line, forestLine, forestArray, i, *forestDimension);		
 	}
-	//AdvanceGeneration();
+	fclose(inputF);
+	//lishloach lason
+	int numberOfFires = 0;
+	if (numberOfFires == ERROR)
+	{
+		printf("ERROR");
+		return ERROR;
+	}
+
+	outputF = fopen("output.txt", "w");
+	if (outputF == NULL)
+	{
+		printf("File could'nt be opened");
+		return ERROR;
+	}
+	printf("%s - %d\n", forestLine, *generations);	
+	WriteToOutput(outputF, forestLine, numberOfFires);
+	
+	advanceForestgenertaion(forestArray, *forestDimension);
 	(*generations)--;
+
 	while (*generations != 0)
 	{
-		//getForestLineFrom2DArray();
+		fputs("\n", outputF);
+		getForestLineFrom2DArray(forestArray,*forestDimension,forestLine);
+		printf("%s - %d\n", forestLine, *generations);
 		//lishloach lason
-		//Print to Output
-		//AdvanceGeneration();
+		WriteToOutput(outputF, forestLine, numberOfFires);
+
+		advanceForestgenertaion(forestArray, *forestDimension);		
 		(*generations)--;
 	}
+	fclose(outputF);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif
