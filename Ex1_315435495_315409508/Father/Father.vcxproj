@@ -138,7 +138,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="father_func.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="sonProcessCreation.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="father_func.h" />
+    <ClInclude Include="HardCodedData.h" />
+    <ClInclude Include="sonProcessCreation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

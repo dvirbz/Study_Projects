@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define ERROR -1
+#define ERROR_CODE -1
 int countFires(char* forestString)
 {
 	int numberOfFires = 0;
@@ -15,16 +15,19 @@ int countFires(char* forestString)
 		forestString++;
 		currChar = *forestString;
 	}
+	return numberOfFires;
 }
 int main(int argc, char* argv[])
 {
 	if (argc != 2)
 	{
 		printf("Mismatching number of arguments: %d", argc);
-		return ERROR;
+		return ERROR_CODE;
 	}
 	char* forestString =argv[1];	
-	return countFires(forestString);
+	int fires = countFires(forestString);
+	printf("Num = %d\n", fires);
+	return fires;
 }
 
 
